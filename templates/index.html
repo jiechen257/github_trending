@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="filters">
+    <div>
+        <label for="date-picker">Date:</label>
+        <input type="date" id="date-picker" value="{{ selected_date or current_date }}">
+    </div>
+    <div>
+        <label for="language-select">Language:</label>
+        <select id="language-select">
+            <option value="">All Languages</option>
+            <option value="python" {% if selected_language == 'python' %}selected{% endif %}>Python</option>
+            <option value="javascript" {% if selected_language == 'javascript' %}selected{% endif %}>JavaScript</option>
+            <option value="java" {% if selected_language == 'java' %}selected{% endif %}>Java</option>
+            <option value="c++" {% if selected_language == 'c++' %}selected{% endif %}>C++</option>
+            <option value="ruby" {% if selected_language == 'ruby' %}selected{% endif %}>Ruby</option>
+        </select>
+    </div>
+    <div>
+        <label for="since-select">Time Range:</label>
+        <select id="since-select">
+            <option value="daily" {% if selected_since == 'daily' %}selected{% endif %}>Daily</option>
+            <option value="weekly" {% if selected_since == 'weekly' %}selected{% endif %}>Weekly</option>
+            <option value="monthly" {% if selected_since == 'monthly' %}selected{% endif %}>Monthly</option>
+        </select>
+    </div>
+    <div>
+        <label for="limit-select">Show:</label>
+        <select id="limit-select">
+            <option value="10" {% if selected_limit == 10 %}selected{% endif %}>10</option>
+            <option value="25" {% if selected_limit == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if selected_limit == 50 %}selected{% endif %}>50</option>
+            <option value="100" {% if selected_limit == 100 %}selected{% endif %}>100</option>
+        </select>
+    </div>
+    <button id="update-btn">Update</button>
+</div>
+
+<h2>Trending Repositories for <span id="current-date">{{ current_date }}</span></h2>
+
+<div class="search-container">
+    <input type="text" id="search-input" placeholder="Search repositories...">
+</div>
+<div class="repo-grid" id="repo-container">
+{% for repo in repos %}
+    <div class="repo-card">
+        <h2><a href="{{ url_for('details', repo_name=repo.name) }}">{{ repo.name }}</a></h2>
+        <p><strong>Author:</strong> {{ repo.author }}</p>
+        <p><strong>Stars:</strong> <span class="stars">{{ repo.stars }}</span></p>
+        <p><strong>Description:</strong> {{ repo.description }}</p>
+    </div>
+{% endfor %}
+</div>
+
+<script>
+    const searchInput = document.getElementById('search-input');
+    const repoContainer = document.getElementById('repo-container');
+    const datePicker = document.getElementById('date-picker');
+    const languageSelect = document.getElementById('language-select');
+    const sinceSelect = document.getElementById('since-select');
+    const limitSelect = document.getElementById('limit-select');
+    const updateBtn = document.getElementById('update-btn');
+    const currentDateSpan = document.getElementById('current-date');
+
+    flatpickr("#date-picker", {
+        dateFormat: "Y-m-d",
+        maxDate: "today",
+    });
+
+    function updateTrending() {
+        const date = datePicker.value;
+        const language = languageSelect.value;
+        const since = sinceSelect.value;
+        const limit = limitSelect.value;
+
+        fetch(`/update_trending?date=${date}&language=${language}&since=${since}&limit=${limit}`)
+            .then(response => response.json())
+            .then(repos => {
+                repoContainer.innerHTML = '';
+                repos.forEach(repo => {
+                    const repoCard = document.createElement('div');
+                    repoCard.className = 'repo-card';
+                    repoCard.innerHTML = `
+                        <h2><a href="/details/${repo.name}">${repo.name}</a></h2>
+                        <p><strong>Author:</strong> ${repo.author}</p>
+                        <p><strong>Stars:</strong> <span class="stars">${repo.stars}</span></p>
+                        <p><strong>Description:</strong> ${repo.description}</p>
+                    `;
+                    repoContainer.appendChild(repoCard);
+                });
+                currentDateSpan.textContent = date;
+            });
+    }
+
+    // 添加事件监听器，当选项改变时更新趋势
+    datePicker.addEventListener('change', updateTrending);
+    languageSelect.addEventListener('change', updateTrending);
+    sinceSelect.addEventListener('change', updateTrending);
+    limitSelect.addEventListener('change', updateTrending);
+    updateBtn.addEventListener('click', updateTrending);
+    updateBtn.addEventListener('click', updateTrending);
+
+    searchInput.addEventListener('keyup', function(e) {
+        const term = e.target.value.toLowerCase();
+        
+        Array.from(repoContainer.getElementsByClassName('repo-card')).forEach(function(repo) {
+            const title = repo.getElementsByTagName('h2')[0].textContent.toLowerCase();
+            const author = repo.getElementsByTagName('p')[0].textContent.toLowerCase();
+            const description = repo.getElementsByTagName('p')[2].textContent.toLowerCase();
+            
+            if (title.includes(term) || author.includes(term) || description.includes(term)) {
+                repo.style.display = 'block';
+            } else {
+                repo.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

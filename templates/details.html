@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{ repo.name }} - Details{% endblock %}
+
+{% block content %}
+<h2>{{ repo.name }}</h2>
+<p><strong>Author:</strong> {{ repo.author }}</p>
+<p><strong>Stars:</strong> <span class="stars">{{ repo.stars }}</span></p>
+<p><strong>Description:</strong> {{ repo.description }}</p>
+
+<h3>README</h3>
+<div class="readme-content">
+    {{ readme_content | safe }}
+</div>
+
+<h3>File Structure</h3>
+<div class="file-structure">
+{% if file_structure %}
+    {% for item in file_structure %}
+    {% if item.type == 'directory' %}📁{% else %}📄{% endif %} {{ item.name }}<br>
+    {% endfor %}
+{% else %}
+    <p>Unable to fetch file structure.</p>
+{% endif %}
+</div>
+
+<a href="{{ url_for('index') }}">Back to Trending</a>
+{% endblock %}
